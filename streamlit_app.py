@@ -22,63 +22,64 @@ if "laudat" not in st.session_state:
 # ------------------------
 
 st.subheader("🔧 Tarpeet")
+with st.container(border=True):
+    remove_tarve = None
+    for i, t in enumerate(st.session_state.tarpeet):
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            t["pituus"] = st.number_input(f"Pituus {i+1}", min_value=100, max_value=10000, value=t["pituus"], key=f"pituus_{i}")
+        with col2:
+            t["maara"] = st.number_input(f"Määrä {i+1}", min_value=1, max_value=100, value=t["maara"], key=f"maara_{i}")
+        with col3:
+            if st.button("🗑️", key=f"remove_tarve_{i}"):
+                remove_tarve = i
 
-remove_tarve = None
-for i, t in enumerate(st.session_state.tarpeet):
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col1:
-        t["pituus"] = st.number_input(f"Pituus {i+1}", min_value=100, max_value=10000, value=t["pituus"], key=f"pituus_{i}")
-    with col2:
-        t["maara"] = st.number_input(f"Määrä {i+1}", min_value=1, max_value=100, value=t["maara"], key=f"maara_{i}")
-    with col3:
-        if st.button("🗑️", key=f"remove_tarve_{i}"):
-            remove_tarve = i
+    if remove_tarve is not None:
+        st.session_state.tarpeet.pop(remove_tarve)
+        st.rerun()
 
-if remove_tarve is not None:
-    st.session_state.tarpeet.pop(remove_tarve)
-    st.rerun()
-
-if st.button("➕ Lisää tarve"):
-   st.session_state.tarpeet.append({"pituus": 1000, "maara": 1})
-   st.rerun()
-   #st.session_state.tarpeet = st.session_state.tarpeet + [{"pituus": 1000, "maara": 1}]
+    if st.button("➕ Lisää tarve"):
+        st.session_state.tarpeet.append({"pituus": 1000, "maara": 1})
+        st.rerun()
+        #st.session_state.tarpeet = st.session_state.tarpeet + [{"pituus": 1000, "maara": 1}]
 
 # ------------------------
 # Laudat – dynaamiset kentät
 # ------------------------
 
 st.subheader("🪵 Saatavilla olevat laudat")
+with st.container(border=True):
+    remove_lauta = None
+    for i, l in enumerate(st.session_state.laudat):
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            st.session_state.laudat[i] = st.number_input(f"Lauta {i+1} pituus", min_value=100, max_value=10000, value=l, key=f"lauta_{i}")
+        with col2:
+            if st.button("🗑️", key=f"remove_lauta_{i}"):
+                remove_lauta = i
 
-remove_lauta = None
-for i, l in enumerate(st.session_state.laudat):
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        st.session_state.laudat[i] = st.number_input(f"Lauta {i+1} pituus", min_value=100, max_value=10000, value=l, key=f"lauta_{i}")
-    with col2:
-        if st.button("🗑️", key=f"remove_lauta_{i}"):
-            remove_lauta = i
+    if remove_lauta is not None:
+        st.session_state.laudat.pop(remove_lauta)
+        st.rerun()
 
-if remove_lauta is not None:
-    st.session_state.laudat.pop(remove_lauta)
-    st.rerun()
-
-if st.button("➕ Lisää lauta"):
-    st.session_state.laudat.append(3000)
-    st.rerun()
+    if st.button("➕ Lisää lauta"):
+        st.session_state.laudat.append(3000)
+        st.rerun()
 
 # ------------------------
 # Muut asetukset
 # ------------------------
 
 st.subheader("⚙️ Asetukset")
-max_combo_len = st.slider("Maksimiyhdistelmän pituus (pätkien määrä laudalla)", 1, 6, 4)
-pakollinenhukkaprosentti = st.slider("Pakollinen minimihukka (%) per lauta", 0, 20, 0, ) / 100
+with st.container(border=True):
+    max_combo_len = st.slider("Maksimiyhdistelmän pituus (pätkien määrä laudalla)", 1, 10, 4)
+    pakollinenhukkaprosentti = st.slider("Pakollinen minimihukka (%) per lauta (paitsi pätkä = lauta)", 0, 20, 0, ) / 100
 
 # ------------------------
 # Ratkaisu
 # ------------------------
-
-if st.button("🚀 Optimoi"):
+st.text("")
+if st.button(" ✨ Laske "):
     try:
         tarpeet = [(t["pituus"], t["maara"]) for t in st.session_state.tarpeet]
         laudat = st.session_state.laudat
@@ -89,6 +90,19 @@ if st.button("🚀 Optimoi"):
 
         combo_id = 0
         yhdistelmat = {}
+        # Suorat pätkä = lauta -yhdistelmät mahdollisuuksiksi
+        for p in set(patkat):
+            for lauta in laudat:
+                if p == lauta:
+                    key = ((p,), lauta)
+                    if key not in yhdistelmat:
+                        yhdistelmat[key] = {
+                            "id": f"y{combo_id}",
+                            "combo": (p,),
+                            "lauta": lauta,
+                            "hukka": 0
+                    }
+                    combo_id += 1
 
         for r in range(1, max_combo_len + 1):
             for combo in combinations(patkat, r):
