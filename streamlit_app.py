@@ -99,7 +99,7 @@ if st.button("🚀 Optimoi"):
                     else:
                         min_hukka = 0
                     min_hukka = lauta * pakollinenhukkaprosentti
-                    if total <= lauta - min_hukka:
+                    if (len(combo) == 1 and total <= lauta) or (len(combo) > 1 and total <= lauta - min_hukka):
                         key = (tuple(sorted(combo)), lauta)
                         if key not in yhdistelmat:
                             yhdistelmat[key] = {
