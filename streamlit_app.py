@@ -6,7 +6,7 @@ import pandas as pd
 import io
 
 st.set_page_config(page_title="Lautojen optimointi", layout="centered")
-st.title("📏 Lautakasa optimointityökalu")
+st.title("📏 Lautakasa")
 # ------------------------
 # SESSION STATE INIT
 # ------------------------
@@ -25,7 +25,7 @@ st.subheader("🔧 Tarpeet")
 
 remove_tarve = None
 for i, t in enumerate(st.session_state.tarpeet):
-    col1, col2, col3 = st.columns([2, 2, 1])
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
         t["pituus"] = st.number_input(f"Pituus {i+1}", min_value=100, max_value=10000, value=t["pituus"], key=f"pituus_{i}")
     with col2:
@@ -51,7 +51,7 @@ st.subheader("🪵 Saatavilla olevat laudat")
 
 remove_lauta = None
 for i, l in enumerate(st.session_state.laudat):
-    col1, col2 = st.columns([3, 1])
+    col1, col2 = st.columns([1, 1])
     with col1:
         st.session_state.laudat[i] = st.number_input(f"Lauta {i+1} pituus", min_value=100, max_value=10000, value=l, key=f"lauta_{i}")
     with col2:
