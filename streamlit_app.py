@@ -2,6 +2,7 @@ import streamlit as st
 from pulp import *
 from itertools import combinations
 from collections import Counter
+from more_itertools import distinct_combinations
 import pandas as pd
 import io
 
@@ -105,7 +106,7 @@ if st.button(" ✨ Laske "):
                     combo_id += 1
 
         for r in range(1, max_combo_len + 1):
-            for combo in combinations(patkat, r):
+            for combo in distinct_combinations(patkat, r):
                 total = sum(combo)
                 for lauta in laudat:
                     if pakollinenhukkaprosentti > 0:
@@ -190,7 +191,7 @@ if st.button(" ✨ Laske "):
 
 
 if "ratkaisut_df" in st.session_state:
-    st.subheader("📋 Ratkaisutaulukko")
+    st.subheader("📋 Leikkaustaulukko")
     st.dataframe(st.session_state.ratkaisut_df)
 
     st.subheader("📋 Lautojen kappalemäärät")
