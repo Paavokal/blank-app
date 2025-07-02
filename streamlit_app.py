@@ -91,39 +91,41 @@ if st.button(" ✨ Laske "):
 
         combo_id = 0
         yhdistelmat = {}
-        # Suorat pätkä = lauta -yhdistelmät mahdollisuuksiksi
-        for p in set(patkat):
-            for lauta in laudat:
-                if p == lauta:
-                    key = ((p,), lauta)
-                    if key not in yhdistelmat:
-                        yhdistelmat[key] = {
-                            "id": f"y{combo_id}",
-                            "combo": (p,),
-                            "lauta": lauta,
-                            "hukka": 0
-                    }
-                    combo_id += 1
 
+        # Luodaan määrä-pohjainen Counter
+        ptk_counter = Counter(patkat)
+
+        # Muunnetaan se lista-muotoon, missä pätkä esiintyy vain kerran (uniq-pätkät)
+        uniq_patkat = list(ptk_counter.keys())
+
+        # Rakennetaan yhdistelmät
         for r in range(1, max_combo_len + 1):
-            for combo in distinct_combinations(patkat, r):
-                total = sum(combo)
-                for lauta in laudat:
-                    if pakollinenhukkaprosentti > 0:
-                        min_hukka = lauta * pakollinenhukkaprosentti
-                    else:
-                        min_hukka = 0
-                    min_hukka = lauta * pakollinenhukkaprosentti
-                    if (len(combo) == 1 and total <= lauta) or (len(combo) > 1 and total <= lauta - min_hukka):
-                        key = (tuple(sorted(combo)), lauta)
-                        if key not in yhdistelmat:
-                            yhdistelmat[key] = {
-                                "id": f"y{combo_id}",
-                                "combo": combo,
-                                "lauta": lauta,
-                                "hukka": lauta - total
-                            }
-                            combo_id += 1
+            for combo in distinct_combinations(uniq_patkat, r):
+                # Rakennetaan kaikki mahdolliset monistukset näistä r-pituisten yhdistelmien pätkistä
+                def generate_weighted_combos(current_combo, counts_left, index):
+                    if index == len(combo):
+                        yield tuple(current_combo)
+                        return
+                    ptk = combo[index]
+                    max_count = ptk_counter[ptk]
+                    for i in range(1, max_count + 1):
+                        generate_weighted = current_combo + [ptk] * i
+                        yield from generate_weighted_combos(generate_weighted, counts_left, index + 1)
+
+                for real_combo in generate_weighted_combos([], ptk_counter, 0):
+                    total = sum(real_combo)
+                    for lauta in laudat:
+                        min_hukka = lauta * pakollinenhukkaprosentti if pakollinenhukkaprosentti > 0 else 0
+                        if (len(real_combo) == 1 and total <= lauta) or (len(real_combo) > 1 and total <= lauta - min_hukka):
+                            key = (tuple(sorted(real_combo)), lauta)
+                            if key not in yhdistelmat:
+                                yhdistelmat[key] = {
+                                    "id": f"y{combo_id}",
+                                    "combo": real_combo,
+                                    "lauta": lauta,
+                                    "hukka": lauta - total
+                                }
+                                combo_id += 1
 
         prob = LpProblem("Pienin_hukka", LpMinimize)
         combo_vars = {
