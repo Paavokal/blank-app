@@ -3,8 +3,11 @@ from pulp import *
 from itertools import combinations
 from collections import Counter
 from more_itertools import distinct_combinations
+from itertools import combinations_with_replacement
+from itertools import product
 import pandas as pd
 import io
+
 
 st.set_page_config(page_title="Lautojen optimointi", layout="centered")
 st.title("📏 Lautakasa")
@@ -98,34 +101,41 @@ if st.button(" ✨ Laske "):
         # Muunnetaan se lista-muotoon, missä pätkä esiintyy vain kerran (uniq-pätkät)
         uniq_patkat = list(ptk_counter.keys())
 
-        # Rakennetaan yhdistelmät
-        for r in range(1, max_combo_len + 1):
-            for combo in distinct_combinations(uniq_patkat, r):
-                # Rakennetaan kaikki mahdolliset monistukset näistä r-pituisten yhdistelmien pätkistä
-                def generate_weighted_combos(current_combo, counts_left, index):
-                    if index == len(combo):
-                        yield tuple(current_combo)
-                        return
-                    ptk = combo[index]
-                    max_count = ptk_counter[ptk]
-                    for i in range(1, max_count + 1):
-                        generate_weighted = current_combo + [ptk] * i
-                        yield from generate_weighted_combos(generate_weighted, counts_left, index + 1)
 
-                for real_combo in generate_weighted_combos([], ptk_counter, 0):
-                    total = sum(real_combo)
-                    for lauta in laudat:
-                        min_hukka = lauta * pakollinenhukkaprosentti if pakollinenhukkaprosentti > 0 else 0
-                        if (len(real_combo) == 1 and total <= lauta) or (len(real_combo) > 1 and total <= lauta - min_hukka):
-                            key = (tuple(sorted(real_combo)), lauta)
-                            if key not in yhdistelmat:
-                                yhdistelmat[key] = {
-                                    "id": f"y{combo_id}",
-                                    "combo": real_combo,
-                                    "lauta": lauta,
-                                    "hukka": lauta - total
-                                }
-                                combo_id += 1
+        def bounded_combinations(counter, max_len):
+            items = list(counter.items())
+
+            def backtrack(index=0, current=[]):
+                if 0 < len(current) <= max_len:
+                    yield tuple(current)
+                if len(current) == max_len:
+                    return
+                for i in range(index, len(items)):
+                    val, max_count = items[i]
+                    # Selvitetään kuinka monta kappaletta jo on lisätty val:ia
+                    current_count = current.count(val)
+                    if current_count < max_count:
+                        yield from backtrack(i, current + [val])
+
+            return backtrack()
+        
+        # Rakennetaan yhdistelmät
+        for combo in bounded_combinations(ptk_counter, max_combo_len):
+            combo_counter = Counter(combo)
+            total = sum(combo)
+            for lauta in laudat:
+                min_hukka = lauta * pakollinenhukkaprosentti if pakollinenhukkaprosentti > 0 else 0
+
+                if total <= lauta - (min_hukka if len(combo) > 1 else 0):
+                    key = (frozenset(combo_counter.items()), lauta)
+                    if key not in yhdistelmat:
+                        yhdistelmat[key] = {
+                            "id": f"y{combo_id}",
+                            "combo": combo,
+                            "lauta": lauta,
+                            "hukka": lauta - total
+                        }
+                        combo_id += 1
 
         prob = LpProblem("Pienin_hukka", LpMinimize)
         combo_vars = {
